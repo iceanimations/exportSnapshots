@@ -108,14 +108,17 @@ class UI(Form, Base):
                     fillinout.fill()
                     snap = imaya.snapshot([1920, 1080])
                     startPath = outPath
+                    name = cam
+                    if state == 2:
+                        startPath = osp.splitext(outPath)[0] +'_in.jpg'
+                        name = cam + '_IN'
+                    subprocess.call('\"'+ osp.join(imgMgcPath, 'convert.exe') +'\" %s -undercolor #00000060 -pointsize 35 -channel RGBA -fill white -draw "text 800,1050 %s" %s'%(snap, name, startPath), shell=True)
                     if state == 2:
                         pc.currentTime(pc.playbackOptions(q=True, maxTime=True))
                         snap2 = imaya.snapshot([1920, 1080])
-                        startPath = osp.splitext(outPath)[0] +'_start.jpg'
-                    subprocess.call('\"'+ osp.join(imgMgcPath, 'convert.exe') +'\" %s -undercolor #00000060 -pointsize 35 -channel RGBA -fill white -draw "text 800,1050 %s" %s'%(snap, cam, startPath), shell=True)
-                    if state == 2:
-                        endPath = osp.splitext(outPath)[0] +'_end.jpg'
-                        subprocess.call('\"'+ osp.join(imgMgcPath, 'convert.exe') +'\" %s -undercolor #00000060 -pointsize 35 -channel RGBA -fill white -draw "text 800,1050 %s" %s'%(snap2, cam, endPath), shell=True)
+                        endPath = osp.splitext(outPath)[0] +'_out.jpg'
+                        name = cam + '_OUT'
+                        subprocess.call('\"'+ osp.join(imgMgcPath, 'convert.exe') +'\" %s -undercolor #00000060 -pointsize 35 -channel RGBA -fill white -draw "text 800,1050 %s" %s'%(snap2, name, endPath), shell=True)
                     self.progressBar.setValue(i+1)
                     qApp.processEvents()
                     pc.camera(cam, e=True, overscan=overscan)
