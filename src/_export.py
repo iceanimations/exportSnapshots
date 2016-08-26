@@ -34,7 +34,7 @@ class UI(Form, Base):
         
         self.progressBar.hide()
         
-        self.cameraBox = cui.MultiSelectComboBox(self, '--Select Cameras--')
+        self.cameraBox = cui.MultiSelectComboBox(self, '--Select Cameras--', triState=True)
         self.horizontalLayout.insertWidget(0, self.cameraBox)
         
         self.exportButton.clicked.connect(self.export)
@@ -78,7 +78,7 @@ class UI(Form, Base):
         try:
             path = self.getPath()
             if path:
-                cameras = self.cameraBox.getSelectedItems()
+                cameras = self.cameraBox.getState()
                 if not cameras:
                     self.showMessage(msg='No camera selected to export the snapshot for',
                                      icon=QMessageBox.Warning)
@@ -88,7 +88,9 @@ class UI(Form, Base):
                 qApp.processEvents()
                 backend.hideFaceUi()
                 backend.hideShowCurves(True)
-                for i, cam in enumerate(cameras):
+                for i, data in enumerate(cameras.items()):
+                    cam, state = data
+                    if state == 0: continue;
                     outPath = osp.join(path, cam).replace('\\', '/') + '.jpg'
                     if osp.exists(outPath):
                         if self.overwriteExistingButton.isChecked():
@@ -105,7 +107,15 @@ class UI(Form, Base):
                     pc.select(cam)
                     fillinout.fill()
                     snap = imaya.snapshot([1920, 1080])
-                    subprocess.call('\"'+ osp.join(imgMgcPath, 'convert.exe') +'\" %s -undercolor #00000060 -pointsize 35 -channel RGBA -fill white -draw "text 800,1050 %s" %s'%(snap, cam, outPath), shell=True)
+                    startPath = outPath
+                    if state == 2:
+                        pc.currentTime(pc.playbackOptions(q=True, maxTime=True))
+                        snap2 = imaya.snapshot([1920, 1080])
+                        startPath = osp.splitext(outPath)[0] +'_start.jpg'
+                    subprocess.call('\"'+ osp.join(imgMgcPath, 'convert.exe') +'\" %s -undercolor #00000060 -pointsize 35 -channel RGBA -fill white -draw "text 800,1050 %s" %s'%(snap, cam, startPath), shell=True)
+                    if state == 2:
+                        endPath = osp.splitext(outPath)[0] +'_end.jpg'
+                        subprocess.call('\"'+ osp.join(imgMgcPath, 'convert.exe') +'\" %s -undercolor #00000060 -pointsize 35 -channel RGBA -fill white -draw "text 800,1050 %s" %s'%(snap2, cam, endPath), shell=True)
                     self.progressBar.setValue(i+1)
                     qApp.processEvents()
                     pc.camera(cam, e=True, overscan=overscan)
